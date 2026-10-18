@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#F2F3F7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>随手记账</title>
+<style>
+:root{
+  --bg:#F2F3F7;
+  --card:#FFFFFF;
+  --card2:#F7F8FB;
+  --text:#1B1E27;
+  --text2:#8B909C;
+  --text3:#B4B9C4;
+  --line:#EDEFF4;
+  --primary:#3B6EF6;
+  --primary-soft:#EBF1FF;
+  --on-primary:#FFFFFF;
+  --danger:#F2534C;
+  --danger-soft:#FEECEB;
+  --shadow:0 2px 10px rgba(20,24,40,.05);
+  --shadow-lg:0 -8px 30px rgba(20,24,40,.12);
+  --radius:16px;
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#101218;
+    --card:#1A1D25;
+    --card2:#22262F;
+    --text:#EDEFF5;
+    --text2:#8A909D;
+    --text3:#5C6273;
+    --line:#282C36;
+    --primary:#5B87FF;
+    --primary-soft:#1E2A46;
+    --on-primary:#0B0D12;
+    --danger:#FF6B63;
+    --danger-soft:#3A2321;
+    --shadow:0 2px 10px rgba(0,0,0,.25);
+    --shadow-lg:0 -8px 30px rgba(0,0,0,.5);
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",Helvetica,Arial,"Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);font-size:15px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;overscroll-behavior-y:none;
+}
+button{font-family:inherit;font-size:inherit;border:none;background:none;color:inherit;padding:0;cursor:pointer;touch-action:manipulation}
+input,textarea{font-family:inherit;font-size:inherit;color:inherit}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+/* ---------- 布局 ---------- */
+.app{min-height:100vh;min-height:100dvh;padding-bottom:calc(66px + var(--safe-b))}
+.view{display:none;animation:fade .18s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:.4}to{opacity:1}}
+.wrap{padding:0 14px;max-width:560px;margin:0 auto}
+
+/* 顶部月份栏 */
+.monthbar{
+  position:sticky;top:0;z-index:20;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  height:52px;padding:0 8px;background:var(--bg);
+  padding-top:var(--safe-t);
+}
+.monthbar .mb-title{
+  display:flex;align-items:center;gap:6px;font-size:17px;font-weight:700;
+  padding:6px 10px;border-radius:10px;min-width:130px;justify-content:center;
+}
+.monthbar .mb-title:active{background:var(--card2)}
+.mb-title svg{width:13px;height:13px;opacity:.5}
+.navbtn{
+  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  color:var(--text2);
+}
+.navbtn:active{background:var(--card2)}
+.navbtn svg{width:20px;height:20px}
+.navbtn:disabled{opacity:.25}
+
+/* 卡片 */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow)}
+.summary{padding:18px 18px 16px;margin-bottom:14px}
+.summary .lab{font-size:12.5px;color:var(--text2);letter-spacing:.3px}
+.summary .big{font-size:34px;font-weight:800;letter-spacing:-.5px;margin:4px 0 8px}
+.summary .big .cur{font-size:19px;font-weight:700;margin-right:2px;opacity:.85}
+.summary .meta{font-size:12.5px;color:var(--text2)}
+.summary .meta b{color:var(--text);font-weight:600}
+
+/* ---------- 明细列表 ---------- */
+.daygroup{margin-bottom:12px;overflow:hidden}
+.dayhead{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 16px 8px;font-size:12.5px;color:var(--text2);
+}
+.dayhead .d1{font-weight:600;color:var(--text)}
+.dayhead .d2{margin-left:6px}
+.rec{display:flex;align-items:center;gap:12px;padding:11px 16px;position:relative}
+.rec+.rec::before{content:"";position:absolute;left:16px;right:0;top:0;height:1px;background:var(--line)}
+.rec:active{background:var(--card2)}
+.rec .ic{
+  width:38px;height:38px;flex:0 0 38px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:19px;background:var(--card2);
+}
+.rec .mid{flex:1;min-width:0}
+.rec .t1{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec .t2{font-size:12px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec .amt{font-size:16px;font-weight:700;flex:0 0 auto;white-space:nowrap}
+.empty{padding:56px 20px;text-align:center;color:var(--text2)}
+.empty .em{font-size:44px;margin-bottom:10px;opacity:.8}
+.empty .et{font-size:14px}
+.empty .es{font-size:12.5px;color:var(--text3);margin-top:6px}
+
+/* ---------- 统计 ---------- */
+.seg{display:flex;background:var(--card2);border-radius:11px;padding:3px;margin:0 0 14px}
+.seg button{flex:1;padding:8px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--text2)}
+.seg button.on{background:var(--card);color:var(--text);box-shadow:var(--shadow)}
+.donutwrap{display:flex;align-items:center;gap:8px;padding:16px}
+.donut{position:relative;flex:0 0 auto}
+.donut svg{display:block}
+.donut .dc{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.donut .dc .dl{font-size:11.5px;color:var(--text2)}
+.donut .dc .dv{font-size:17px;font-weight:800;margin-top:2px}
+.donut .dc .dv .cur{font-size:12px;font-weight:700}
+.statlist{padding:0 16px 14px}
+.srow{display:flex;align-items:center;gap:11px;padding:10px 0;position:relative}
+.srow+.srow .tophair{position:absolute;left:0;right:0;top:0;height:1px;background:var(--line)}
+.srow .dot{width:9px;height:9px;border-radius:50%;flex:0 0 9px}
+.srow .sic{font-size:17px;width:22px;text-align:center;flex:0 0 22px}
+.srow .sinfo{flex:1;min-width:0}
+.srow .sname{font-size:14px;font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.srow .sname .sa{font-weight:700}
+.srow .bar{height:6px;border-radius:99px;background:var(--card2);margin-top:6px;overflow:hidden}
+.srow .bar i{display:block;height:100%;border-radius:99px;transition:width .4s cubic-bezier(.2,.8,.3,1)}
+.srow .sp{font-size:11.5px;color:var(--text2);margin-top:4px;display:flex;justify-content:space-between}
+.subrow{display:flex;align-items:center;gap:8px;padding:7px 0 7px 32px;font-size:13px;color:var(--text2)}
+.subrow .sb{width:4px;height:4px;border-radius:50%;background:var(--text3);flex:0 0 4px}
+.subrow .sam{margin-left:auto;color:var(--text);font-weight:600;font-size:13px}
+.srow .sarrow{transition:transform .2s;color:var(--text3);width:16px;height:16px}
+.srow.open .sarrow{transform:rotate(90deg)}
+.trend{padding:14px 16px 18px}
+.trend .th{font-size:12.5px;color:var(--text2);margin-bottom:12px;display:flex;justify-content:space-between}
+.bars{display:flex;align-items:flex-end;gap:2px;height:110px}
+.bars .bcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px}
+.bars .bcol i{width:100%;max-width:22px;border-radius:4px 4px 2px 2px;background:var(--primary);opacity:.85;min-height:3px;transition:height .4s cubic-bezier(.2,.8,.3,1)}
+.bars .bcol.hi i{background:var(--danger);opacity:1}
+.bars .bl{font-size:9.5px;color:var(--text3);height:12px;line-height:12px;white-space:nowrap;transform:scale(.92)}
+.bars .bcol i.zero{background:var(--line);min-height:2px}
+
+/* ---------- 设置 ---------- */
+.setgroup{margin-bottom:14px;overflow:hidden}
+.setgroup .gh{padding:13px 16px 4px;font-size:12px;color:var(--text2);letter-spacing:.3px}
+.setitem{display:flex;align-items:center;gap:12px;padding:14px 16px;position:relative;width:100%;text-align:left}
+.setitem+.setitem::before{content:"";position:absolute;left:16px;right:0;top:0;height:1px;background:var(--line)}
+.setitem:active{background:var(--card2)}
+.setitem .sic{width:26px;text-align:center;font-size:17px}
+.setitem .st{flex:1}
+.setitem .st .a{font-size:14.5px}
+.setitem .st .b{font-size:12px;color:var(--text2);margin-top:2px}
+.setitem .chev{color:var(--text3);width:16px;height:16px}
+.catcard{padding:12px 16px;position:relative}
+.catcard+.catcard::before{content:"";position:absolute;left:16px;right:0;top:0;height:1px;background:var(--line)}
+.catcard .ch{display:flex;align-items:center;gap:9px}
+.catcard .ch .cic{font-size:18px;width:22px;text-align:center}
+.catcard .ch .cn{font-size:14.5px;font-weight:600;flex:1}
+.catcard .ch .cnt{font-size:11.5px;color:var(--text3)}
+.catcard .ch .del{color:var(--danger);font-size:12.5px;padding:6px 8px;border-radius:8px}
+.catcard .ch .del:active{background:var(--danger-soft)}
+.subchips{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+.subchip{display:flex;align-items:center;gap:5px;background:var(--card2);border-radius:9px;padding:6px 8px 6px 5px;font-size:13px}
+.subchip .sn{padding:0 1px;border-radius:6px}
+.subchip .x{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:14px;line-height:1}
+.subchip .x:active{background:var(--danger-soft);color:var(--danger)}
+.addsub{display:flex;align-items:center;gap:6px;background:var(--primary-soft);color:var(--primary);border-radius:9px;padding:6px 11px;font-size:13px;font-weight:600}
+
+/* ---------- 拖动排序 ---------- */
+.dh{
+  flex:0 0 auto;width:20px;height:22px;display:flex;align-items:center;justify-content:center;
+  color:var(--text3);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;
+}
+.dh svg{width:16px;height:16px;display:block;pointer-events:none}
+.subchip .dh{width:14px;height:14px;margin-right:-1px}
+.subchip .dh svg{width:13px;height:13px}
+.dragging{opacity:.96;background:var(--primary-soft)!important;box-shadow:0 8px 22px rgba(20,24,40,.2);position:relative;z-index:6}
+.dragging .dh{color:var(--primary)}
+#setCats .cn,#setCats .subchip .sn{cursor:pointer}
+#setCats .cn:active,#setCats .subchip .sn:active{opacity:.5}
+
+/* ---------- 底部导航 ---------- */
+.tabbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  display:flex;background:var(--card);border-top:1px solid var(--line);
+  padding-bottom:var(--safe-b);box-shadow:var(--shadow-lg);
+}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 7px;color:var(--text2);font-size:10.5px}
+.tabbar button svg{width:23px;height:23px}
+.tabbar button.on{color:var(--primary)}
+.fab{
+  position:fixed;right:18px;bottom:calc(76px + var(--safe-b));z-index:45;
+  width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#4E7BFF,#3B6EF6);color:#fff;
+  box-shadow:0 8px 22px rgba(59,110,246,.42);transition:transform .15s,opacity .2s;
+}
+.fab:active{transform:scale(.92)}
+.fab svg{width:26px;height:26px}
+.fab.hide{opacity:0;pointer-events:none;transform:scale(.6)}
+
+/* ---------- 记一笔面板 ---------- */
+.sheet{
+  position:fixed;inset:0;z-index:80;background:var(--bg);display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);
+  padding-top:var(--safe-t);
+}
+.sheet.open{transform:translateY(0)}
+.sheet-head{display:flex;align-items:center;height:52px;padding:0 8px;flex:0 0 auto}
+.sheet-head .sh-title{flex:1;text-align:center;font-size:16px;font-weight:700}
+.sheet-head .sh-btn{width:44px;height:40px;display:flex;align-items:center;justify-content:center;color:var(--text2)}
+.sheet-head .sh-btn.del{color:var(--danger);font-size:14px;width:auto;padding:0 11px;font-weight:600}
+.sheet-head .sh-btn svg{width:20px;height:20px}
+.sheet-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px}
+.amountbox{padding:6px 20px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.amountbox .aval{font-size:38px;font-weight:800;letter-spacing:-.5px;flex:1;overflow:hidden;white-space:nowrap}
+.amountbox .aval .cur{font-size:22px;font-weight:700;opacity:.75;margin-right:3px}
+.amountbox .aval.blank{color:var(--text3)}
+.metarow{display:flex;gap:10px;padding:0 16px 12px}
+.metafield{
+  flex:1 1 0;display:flex;align-items:center;gap:6px;background:var(--card);border-radius:11px;
+  padding:9px 10px;font-size:13px;min-width:0;box-shadow:var(--shadow);
+}
+.metafield .mfl{color:var(--text2);font-size:12.5px;flex:0 0 auto}
+.metafield input{border:none;background:none;outline:none;flex:1;min-width:0;width:100%;font-size:13px}
+.metafield input[type=date]{color:var(--text);font-size:12.5px}
+.catzone{padding:2px 12px 0}
+.cattabs{display:flex;gap:7px;overflow-x:auto;padding:4px 4px 10px;scrollbar-width:none;-ms-overflow-style:none}
+.cattabs::-webkit-scrollbar{display:none}
+.cattab{
+  flex:0 0 auto;display:flex;align-items:center;gap:5px;padding:8px 13px;border-radius:11px;
+  font-size:13.5px;font-weight:600;background:var(--card);color:var(--text2);box-shadow:var(--shadow);
+}
+.cattab .ci{font-size:15px}
+.cattab.on{background:var(--primary);color:var(--on-primary);box-shadow:0 4px 12px rgba(59,110,246,.3)}
+.subgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:2px 0 12px}
+.subbtn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:11px 4px;
+  border-radius:12px;background:var(--card);box-shadow:var(--shadow);font-size:12.5px;color:var(--text);
+  position:relative;min-height:46px;text-align:center;line-height:1.25;
+}
+.subbtn.on{background:var(--primary-soft);color:var(--primary);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--primary)}
+.sellabel{padding:0 20px 10px;font-size:12.5px;color:var(--text2)}
+.cmhead{display:flex;align-items:center;justify-content:space-between;padding:0 4px 8px}
+.cmhead .cl{font-size:12.5px;color:var(--text2)}
+.cmhead .ce{font-size:12.5px;color:var(--primary);font-weight:600;padding:4px 8px;border-radius:8px}
+.cmhead .ce:active{background:var(--primary-soft)}
+.subbtn .cmi{font-size:15px;line-height:1;margin-bottom:1px}
+.subbtn .cmx{
+  position:absolute;top:-5px;right:-5px;width:19px;height:19px;border-radius:50%;
+  background:var(--danger);color:#fff;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.2);
+}
+.subbtn.adm{background:var(--primary-soft);color:var(--primary);font-weight:600;box-shadow:none;border:1px dashed var(--primary)}
+.dlgsel{width:100%;background:var(--card2);border:none;outline:none;border-radius:11px;padding:11px 12px;font-size:14.5px;color:var(--text)}
+.dlglab{display:block;font-size:12.5px;color:var(--text2);margin:0 2px 6px}
+.dlglab:not(:first-child){margin-top:13px}
+.sheet-foot{flex:0 0 auto;background:var(--card);border-top:1px solid var(--line);padding:10px 12px calc(10px + var(--safe-b))}
+.padwrap{display:grid;grid-template-columns:1fr 1fr 1fr 1.28fr;gap:8px}
+.pad{display:contents}
+.key{
+  height:50px;border-radius:12px;background:var(--card2);font-size:21px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;user-select:none;
+}
+.key:active{background:var(--line);transform:scale(.97)}
+.key.fn{font-size:20px}
+.key.save{
+  grid-row:2 / span 3;grid-column:4;height:auto;background:linear-gradient(135deg,#4E7BFF,#3B6EF6);
+  color:#fff;font-size:17px;font-weight:700;border-radius:14px;box-shadow:0 4px 14px rgba(59,110,246,.35);
+}
+.key.save:active{transform:scale(.97)}
+.key.save:disabled{opacity:.4;box-shadow:none}
+.key.ghost{background:transparent;color:var(--text2)}
+
+/* ---------- 弹窗 / 提示 ---------- */
+.mask{position:fixed;inset:0;z-index:70;background:rgba(12,15,25,.42);opacity:0;pointer-events:none;transition:opacity .25s}
+.mask.open{opacity:1;pointer-events:auto}
+.dialog{
+  position:fixed;left:50%;top:50%;z-index:90;transform:translate(-50%,-50%) scale(.94);opacity:0;pointer-events:none;
+  width:min(340px,86vw);background:var(--card);border-radius:18px;box-shadow:0 12px 40px rgba(10,14,30,.28);
+  padding:20px 18px 14px;transition:opacity .2s,transform .2s;
+}
+.dialog.open{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+.dialog .dt{font-size:16px;font-weight:700;text-align:center;margin-bottom:12px}
+.dialog input[type=text]{
+  width:100%;background:var(--card2);border:none;outline:none;border-radius:11px;padding:12px 13px;font-size:15px;margin-bottom:10px;
+}
+.dialog .emojis{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.dialog .emojis span{width:34px;height:34px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:17px}
+.dialog .emojis span.on{background:var(--primary-soft);box-shadow:inset 0 0 0 1.5px var(--primary)}
+.dialog .dacts{display:flex;gap:10px}
+.dialog .dacts button{flex:1;padding:11px;border-radius:11px;font-weight:600;font-size:14.5px}
+.dialog .dacts .cancel{background:var(--card2);color:var(--text2)}
+.dialog .dacts .ok{background:var(--primary);color:var(--on-primary)}
+.dialog .dacts .ok.danger{background:var(--danger);color:#fff}
+.toast{
+  position:fixed;left:50%;bottom:calc(96px + var(--safe-b));z-index:120;transform:translate(-50%,10px);
+  background:rgba(24,28,40,.92);color:#fff;padding:10px 18px;border-radius:99px;font-size:13.5px;
+  opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;max-width:80vw;text-align:center;
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ============ 明细 ============ -->
+  <section id="view-list" class="view active">
+    <div class="monthbar">
+      <button class="navbtn" id="listPrev" aria-label="上个月"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button class="mb-title" id="listMonth"><span id="listMonthText">2026年10月</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+      <button class="navbtn" id="listNext" aria-label="下个月"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+    <div class="wrap">
+      <div class="card summary">
+        <div class="lab">本月支出</div>
+        <div class="big mono"><span class="cur">¥</span><span id="listTotal">0.00</span></div>
+        <div class="meta"><b id="listCount">共 0 笔</b> · 日均 <b id="listAvg">¥0.00</b></div>
+      </div>
+      <div id="listBody"></div>
+    </div>
+  </section>
+
+  <!-- ============ 统计 ============ -->
+  <section id="view-stat" class="view">
+    <div class="monthbar">
+      <button class="navbtn" id="statPrev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button class="mb-title" id="statPeriod"><span id="statPeriodText">2026年10月</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+      <button class="navbtn" id="statNext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+    <div class="wrap">
+      <div class="seg" id="statScope">
+        <button data-scope="month" class="on">按 月</button>
+        <button data-scope="year">按 年</button>
+      </div>
+      <div class="card">
+        <div class="amountbox" style="padding:16px 18px 6px">
+          <div style="flex:1">
+            <div class="lab" style="font-size:12.5px;color:var(--text2)" id="statTotLabel">合计支出</div>
+            <div class="big mono" style="font-size:30px;font-weight:800;margin-top:4px"><span class="cur" style="font-size:18px">¥</span><span id="statTotal">0.00</span></div>
+          </div>
+        </div>
+        <div id="statDonutZone"></div>
+      </div>
+      <div id="statCatZone"></div>
+      <div class="card" id="statTrendCard" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <!-- ============ 设置 ============ -->
+  <section id="view-set" class="view">
+    <div class="monthbar"><div class="mb-title" style="min-width:auto">分类与数据</div></div>
+    <div class="wrap">
+      <div class="card setgroup" id="setCommon">
+        <div class="gh">常用分类</div>
+      </div>
+      <div class="card setgroup" id="setCats" data-sortable="main" data-axis="y">
+        <div class="gh">分类管理</div>
+      </div>
+      <div class="card setgroup">
+        <div class="gh">数据</div>
+        <button class="setitem" id="btnExport">
+          <span class="sic">📤</span>
+          <span class="st"><span class="a">导出备份</span><span class="b" id="exportSub">共 0 条记录</span></span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <button class="setitem" id="btnImport">
+          <span class="sic">📥</span>
+          <span class="st"><span class="a">导入备份</span><span class="b">从 JSON 文件恢复（覆盖当前数据）</span></span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <button class="setitem" id="btnCopy">
+          <span class="sic">📋</span>
+          <span class="st"><span class="a">复制数据到剪贴板</span><span class="b">方便粘贴到备忘录保存</span></span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+      <div class="card setgroup">
+        <div class="gh">其他</div>
+        <button class="setitem" id="btnRestore">
+          <span class="sic">↩️</span>
+          <span class="st"><span class="a">恢复默认分类</span><span class="b">重置分类为初始状态（不改动历史账单）</span></span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <button class="setitem" id="btnClear">
+          <span class="sic">🗑️</span>
+          <span class="st"><span class="a" style="color:var(--danger)">清空全部记录</span><span class="b">仅删账单，保留分类设置</span></span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+      <div style="text-align:center;color:var(--text3);font-size:12px;padding:6px 0 20px">
+        随手记账 · 数据仅保存在本机浏览器
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- 悬浮记账按钮 -->
+<button class="fab" id="fab" aria-label="记一笔">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<!-- 底部导航 -->
+<nav class="tabbar" id="tabbar">
+  <button data-tab="list" class="on">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+    明细
+  </button>
+  <button data-tab="stat">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+    统计
+  </button>
+  <button data-tab="set">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>
+    设置
+  </button>
+</nav>
+
+<!-- 记一笔 / 编辑 面板 -->
+<div class="sheet" id="sheet">
+  <div class="sheet-head">
+    <button class="sh-btn" id="sheetClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <div class="sh-title" id="sheetTitle">记一笔</div>
+    <button class="sh-btn del hidden" id="sheetDel">删除</button>
+  </div>
+  <div class="sheet-body">
+    <div class="amountbox">
+      <div class="aval blank mono" id="amountVal"><span class="cur">¥</span><span id="amountText">0</span></div>
+    </div>
+    <div class="sellabel" id="selLabel"></div>
+    <div class="metarow">
+      <label class="metafield"><span class="mfl">日期</span><input type="date" id="inDate"></label>
+      <label class="metafield"><span class="mfl">备注</span><input type="text" id="inNote" placeholder="选填" maxlength="40"></label>
+    </div>
+    <div class="catzone">
+      <div class="cattabs" id="catTabs"></div>
+      <div class="subgrid" id="subGrid"></div>
+    </div>
+  </div>
+  <div class="sheet-foot">
+    <div class="padwrap" id="padwrap"></div>
+  </div>
+</div>
+
+<div class="mask" id="mask"></div>
+
+<!-- 通用输入弹窗 -->
+<div class="dialog" id="dlg">
+  <div class="dt" id="dlgTitle">标题</div>
+  <div id="dlgBody"></div>
+  <div class="dacts">
+    <button class="cancel" id="dlgCancel">取消</button>
+    <button class="ok" id="dlgOk">确定</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="fileInput" accept=".json,application/json" class="hidden">
+
+<script>
+"use strict";
+/* =========================================================
+   随手记账 —— 单文件记账应用
+   数据保存在浏览器 localStorage，仅存支出
+   ========================================================= */
+
+/* ---------- 1. 内置分类（参考挖财，二级分类） ---------- */
+const BASE_CATS = [
+  { id:'food', name:'餐饮', icon:'🍚', subs:[
+    '三餐','夜宵','零食','饮料酒水','水果','买菜食材','外卖','聚餐请客'
+  ]},
+  { id:'traffic', name:'交通', icon:'🚗', subs:[
+    '打车','公交地铁','加油','停车费','过路费','违章罚款','保养维修','洗车','火车高铁','飞机','共享单车'
+  ]},
+  { id:'shop', name:'购物', icon:'🛍️', subs:[
+    '日用百货','服饰鞋包','化妆护肤','数码电器','家居用品','图书文具','母婴用品'
+  ]},
+  { id:'fun', name:'休闲娱乐', icon:'🎮', subs:[
+    '电影演出','KTV唱歌','旅游度假','游戏充值','运动健身','会员订阅','酒吧夜店','兴趣爱好'
+  ]},
+  { id:'home', name:'居住', icon:'🏠', subs:[
+    '房租','房贷','物业费','水电燃气','宽带网络','家电维修','家政保洁','家居装修'
+  ]},
+  { id:'comm', name:'通讯', icon:'📱', subs:[
+    '话费','流量充值','网络服务'
+  ]},
+  { id:'med', name:'医疗健康', icon:'💊', subs:[
+    '门诊','药品','住院','体检','牙科','保健品','健身卡'
+  ]},
+  { id:'edu', name:'学习教育', icon:'📚', subs:[
+    '学费','培训课程','书籍资料','考试报名','文具'
+  ]},
+  { id:'social', name:'人情社交', icon:'🎁', subs:[
+    '红包','礼物','请客送礼','孝敬长辈','慈善捐赠'
+  ]},
+  { id:'baby', name:'育儿', icon:'👶', subs:[
+    '奶粉辅食','尿裤','玩具','早教','儿童医疗','童装'
+  ]},
+  { id:'pet', name:'宠物', icon:'🐾', subs:[
+    '宠物食品','宠物医疗','宠物用品','宠物美容'
+  ]},
+  { id:'other', name:'其他', icon:'📌', subs:[
+    '手续费','罚款','丢失','意外损失','其他'
+  ]}
+];
+const PALETTE = ['#3B6EF6','#F2534C','#FF9F43','#22C55E','#A855F7','#06B6D4','#EC4899','#84CC16','#F59E0B','#14B8A6','#8B5CF6','#64748B','#EF4444','#0EA5E9','#D946EF'];
+
+/* 常用二级分类（记账页首屏快捷入口），用户可自行增删。
+   subName 与一级分类同名时，表示只记到一级分类（如“购物”）。 */
+const DEFAULT_COMMON = [
+  { catId:'food',    subName:'三餐' },
+  { catId:'food',    subName:'外卖' },
+  { catId:'traffic', subName:'加油' },
+  { catId:'traffic', subName:'停车费' },
+  { catId:'traffic', subName:'打车' },
+  { catId:'shop',    subName:'日用百货' },
+  { catId:'food',    subName:'买菜食材'},
+  { catId:'food',    subName:'饮料酒水'},
+  { catId:'comm',    subName:'话费' }
+];
+
+/* ---------- 2. 存储 ---------- */
+const KEY = 'suishou_jizhang_v1';
+const DATA_VERSION = 2;
+const DEFAULT_DATA = { v:DATA_VERSION, records:[], meta:{ cats:null, common:null, lastCat:null, lastSub:null } };
+let S = load();
+
+// 默认分类树（仅在首次使用 / 旧数据迁移 / 补回默认 时用于生成）
+function seedCats(){
+  return BASE_CATS.map(c=>({
+    id: c.id, name: c.name, icon: c.icon,
+    subs: c.subs.map((n,i)=>({ id: c.id+':'+i, name: n }))
+  }));
+}
+// 旧版本用“内置分类 + hiddenMains/hiddenSubs/extraMains/extraSubs”表示，这里迁移成完整分类树
+function catsFromOldMeta(old){
+  const hasOld = old && (Array.isArray(old.hiddenMains) || Array.isArray(old.extraMains));
+  if(!hasOld) return seedCats();
+  const hiddenM = new Set(old.hiddenMains || []);
+  const hiddenS = new Set(old.hiddenSubs || []);
+  const extra = old.extraSubs || {};
+  const out = [];
+  BASE_CATS.forEach(c=>{
+    if(hiddenM.has(c.id)) return;
+    const subs = [];
+    c.subs.forEach((n,i)=>{ const sid = c.id+':'+i; if(!hiddenS.has(sid)) subs.push({ id:sid, name:n }); });
+    (extra[c.id]||[]).forEach(s=> subs.push({ id:s.id, name:s.name }));
+    out.push({ id:c.id, name:c.name, icon:c.icon, subs: subs });
+  });
+  (old.extraMains||[]).forEach(c=>{
+    if(hiddenM.has(c.id)) return;
+    out.push({ id:c.id, name:c.name, icon:c.icon||'📌', subs:(extra[c.id]||[]).map(s=>({ id:s.id, name:s.name })) });
+  });
+  return out;
+}
+// 常用分类：旧版按“名称”引用，新版按 subId 引用（subId 为空表示只记到一级分类）
+function commonFromOld(list, cats){
+  if(!Array.isArray(list)) list = DEFAULT_COMMON;
+  return list.map(it=>{
+    const c = cats.find(x=>x.id===it.catId);
+    if(!c) return null;
+    let r;
+    if(it.subId !== undefined){
+      r = { catId:c.id, subId:String(it.subId||'') };
+    }else{
+      const s = c.subs.find(x=>x.name===it.subName);
+      if(s) r = { catId:c.id, subId:s.id };
+      else if(it.subName===c.name) r = { catId:c.id, subId:'' };
+      else return null;
+    }
+    if(it.label) r.label = it.label;
+    return r;
+  }).filter(Boolean);
+}
+function normalizeData(d){
+  d.records = Array.isArray(d.records) ? d.records : [];
+  const old = d.meta || {};
+  let cats = Array.isArray(old.cats) ? old.cats : catsFromOldMeta(old);
+  cats = cats.filter(c=> c && c.id && Array.isArray(c.subs)).map(c=>({
+    id: String(c.id), name: String(c.name||''), icon: c.icon || '📌',
+    subs: c.subs.filter(s=> s && s.id).map(s=>({ id:String(s.id), name:String(s.name||'') }))
+  }));
+  let common = commonFromOld(old.common, cats);   // 兼容 v1 的 subName 引用与 v2 的 subId 引用
+  // 只保留仍然有效的常用项，保证界面上显示的下标与存储下标一致
+  common = common.filter(it=>{
+    const c = it && cats.find(x=>x.id===it.catId);
+    if(!c) return false;
+    return it.subId==='' || c.subs.some(s=>s.id===it.subId);
+  }).map(it=>{
+    const o = { catId:String(it.catId), subId:String(it.subId||'') };
+    if(it.label) o.label = String(it.label);
+    return o;
+  });
+  d.meta = { cats: cats, common: common, lastCat: old.lastCat || null, lastSub: old.lastSub || null };
+  d.v = DATA_VERSION;
+  return d;
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return normalizeData(JSON.parse(JSON.stringify(DEFAULT_DATA)));
+    const d = JSON.parse(raw);
+    if(!d || typeof d!=='object') return normalizeData(JSON.parse(JSON.stringify(DEFAULT_DATA)));
+    return normalizeData(d);
+  }catch(e){
+    console.warn('读取数据失败', e);
+    return normalizeData(JSON.parse(JSON.stringify(DEFAULT_DATA)));
+  }
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch(e){ toast('保存失败：浏览器存储不可用'); }
+}
+
+/* ---------- 3. 工具 ---------- */
+const $ = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.prototype.slice.call((r||document).querySelectorAll(s));
+function fmt(cents){
+  const neg = cents < 0; cents = Math.abs(Math.round(cents||0));
+  let s = (cents/100).toFixed(2), p = s.split('.');
+  p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return (neg?'-':'') + p[0] + '.' + p[1];
+}
+function pad2(n){ return n<10 ? '0'+n : ''+n; }
+function todayStr(d){ d = d||new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function dateObj(str){ const p = String(str).split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+const WEEK = ['日','一','二','三','四','五','六'];
+function dayLabel(str){
+  const d = dateObj(str), t = new Date();
+  const t0 = todayStr(t);
+  const y = new Date(t.getFullYear(), t.getMonth(), t.getDate()-1);
+  const t1 = todayStr(y);
+  const base = (d.getMonth()+1)+'月'+d.getDate()+'日 周'+WEEK[d.getDay()];
+  if(str===t0) return '今天 · '+base;
+  if(str===t1) return '昨天 · '+base;
+  return base;
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+let toastTimer=null;
+function toast(msg){
+  const el = $('#toast'); el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>el.classList.remove('on'), 1700);
+}
+function vibrate(ms){ if(navigator.vibrate) try{navigator.vibrate(ms);}catch(e){} }
+
+/* ---------- 4. 分类读写 ---------- */
+function visibleCats(){ return S.meta.cats; }
+function findCat(id){ return S.meta.cats.find(c=>c.id===id); }
+// 清理掉指向已删除分类的常用项，保证界面下标与存储下标一致
+function pruneCommon(){
+  S.meta.common = (S.meta.common||[]).filter(it=>{
+    const c = findCat(it.catId);
+    if(!c) return false;
+    return (it.subId||'')==='' || c.subs.some(s=>s.id===it.subId);
+  });
+}
+// 改名后同步历史账单里保存的分类名称快照
+function syncRename(catId, subId, newName){
+  S.records.forEach(r=>{
+    if(r.catId!==catId) return;
+    if(subId===null){                       // 一级分类改名
+      r.catName = newName;
+      if(!r.subId) r.subName = newName;     // 只记到一级分类的账单，二级名同步
+    }else if(r.subId===subId){              // 二级分类改名
+      r.subName = newName;
+    }
+  });
+}
+function catColor(mainId){
+  const i = visibleCats().findIndex(c=>c.id===mainId);
+  if(i>=0) return PALETTE[i % PALETTE.length];
+  // 分类已被删除、但历史账单仍在：按 id 稳定散列取色，避免与其他分类撞色
+  let h = 0;
+  for(let k=0; k<mainId.length; k++) h = (h*31 + mainId.charCodeAt(k)) >>> 0;
+  return PALETTE[h % PALETTE.length];
+}
+
+/* ---------- 5. 视图切换 ---------- */
+let curTab = 'list';
+function switchTab(tab){
+  curTab = tab;
+  $$('.view').forEach(v=>v.classList.remove('active'));
+  $('#view-'+tab).classList.add('active');
+  $$('#tabbar button').forEach(b=>b.classList.toggle('on', b.dataset.tab===tab));
+  $('#fab').classList.toggle('hide', tab==='set');
+  window.scrollTo(0,0);
+  if(tab==='list') renderList();
+  if(tab==='stat') renderStat();
+  if(tab==='set') renderSet();
+}
+$$('#tabbar button').forEach(b=> b.addEventListener('click', ()=>switchTab(b.dataset.tab)) );
+
+/* ---------- 6. 明细 ---------- */
+let listMonth = new Date(); listMonth.setDate(1);
+function monthKey(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1); }
+
+function renderList(){
+  const mk = monthKey(listMonth);
+  $('#listMonthText').textContent = listMonth.getFullYear()+'年'+(listMonth.getMonth()+1)+'月';
+  const recs = S.records.filter(r=> (r.date||'').slice(0,7)===mk)
+                         .sort((a,b)=> a.date===b.date ? (b.createdAt||0)-(a.createdAt||0) : (a.date<b.date?1:-1));
+  const total = recs.reduce((s,r)=>s+r.amount, 0);
+  const now = new Date();
+  const dim = new Date(listMonth.getFullYear(), listMonth.getMonth()+1, 0).getDate();
+  const isCur = monthKey(now)===mk;
+  const elapsed = isCur ? now.getDate() : dim;
+  $('#listTotal').textContent = fmt(total);
+  $('#listCount').textContent = '共 ' + recs.length + ' 笔';
+  $('#listAvg').textContent = '¥' + fmt(elapsed>0? total/elapsed : 0);
+  $('#listNext').disabled = isCur;
+
+  const body = $('#listBody');
+  if(!recs.length){
+    body.innerHTML = '<div class="empty"><div class="em">🧾</div><div class="et">本月还没有记账</div><div class="es">点右下角 + 记第一笔</div></div>';
+    return;
+  }
+  const groups = {};
+  recs.forEach(r=>{ (groups[r.date] = groups[r.date] || []).push(r); });
+  let html = '';
+  Object.keys(groups).sort((a,b)=> a<b?1:-1).forEach(date=>{
+    const arr = groups[date];
+    const dt = arr.reduce((s,r)=>s+r.amount,0);
+    html += '<div class="card daygroup"><div class="dayhead"><span><span class="d1">'+dayLabel(date)+'</span></span><span>合计 ¥'+fmt(dt)+'</span></div>';
+    arr.forEach(r=>{
+      const icon = iconOf(r.catId);
+      const t2 = [r.subName || r.catName, r.note].filter(Boolean).join(' · ');
+      html += '<div class="rec" data-id="'+r.id+'">'
+        +   '<div class="ic">'+icon+'</div>'
+        +   '<div class="mid"><div class="t1">'+esc(r.catName)+(r.subName&&r.subName!==r.catName?(' · '+esc(r.subName)):'')+'</div>'
+        +     (t2?'<div class="t2">'+esc(t2)+'</div>':'')+'</div>'
+        +   '<div class="amt mono">-'+fmt(r.amount)+'</div>'
+        + '</div>';
+    });
+    html += '</div>';
+  });
+  body.innerHTML = html;
+  $$('#listBody .rec').forEach(el=> el.addEventListener('click', ()=> openSheet('edit', el.dataset.id)) );
+}
+function iconOf(catId){
+  const c = visibleCats().find(x=>x.id===catId);
+  if(c) return c.icon;
+  const b = BASE_CATS.find(x=>x.id===catId);
+  return b ? b.icon : '📌';
+}
+$('#listPrev').addEventListener('click', ()=>{ listMonth.setMonth(listMonth.getMonth()-1); renderList(); });
+$('#listNext').addEventListener('click', ()=>{ listMonth.setMonth(listMonth.getMonth()+1); renderList(); });
+$('#listMonth').addEventListener('click', ()=>{ listMonth = new Date(); listMonth.setDate(1); renderList(); toast('已回到本月'); });
+
+/* ---------- 7. 统计 ---------- */
+let statScope = 'month';
+let statMonth = new Date(); statMonth.setDate(1);
+let statYear = new Date().getFullYear();
+let openCat = null;
+
+function statRange(){
+  if(statScope==='month'){
+    return { from: monthKey(statMonth)+'-01', to: monthKey(statMonth)+'-31', mk: monthKey(statMonth), label: statMonth.getFullYear()+'年'+(statMonth.getMonth()+1)+'月' };
+  }
+  return { from: statYear+'-01-01', to: statYear+'-12-31', y: statYear, label: statYear+'年' };
+}
+function renderStat(){
+  const rg = statRange();
+  $('#statPeriodText').textContent = rg.label;
+  const isCurMonth = monthKey(new Date())===rg.mk;
+  $('#statNext').disabled = statScope==='month' ? isCurMonth : (statYear>=new Date().getFullYear());
+  $$('#statScope button').forEach(b=> b.classList.toggle('on', b.dataset.scope===statScope));
+
+  const recs = S.records.filter(r=> r.date>=rg.from && r.date<=rg.to );
+  const total = recs.reduce((s,r)=>s+r.amount,0);
+  $('#statTotal').textContent = fmt(total);
+  $('#statTotLabel').textContent = statScope==='month' ? '本月合计支出' : '全年合计支出';
+
+  // 按主分类聚合
+  const byCat = {};
+  recs.forEach(r=>{
+    const k = r.catId;
+    if(!byCat[k]) byCat[k] = { id:k, name:r.catName, amount:0, subs:{}, order:r.date };
+    byCat[k].amount += r.amount;
+    const sk = r.subName || r.catName;
+    if(!byCat[k].subs[sk]) byCat[k].subs[sk] = 0;
+    byCat[k].subs[sk] += r.amount;
+  });
+  const cats = Object.values(byCat).sort((a,b)=> b.amount-a.amount);
+
+  renderDonut(cats, total);
+  renderCatList(cats, total);
+  renderTrend(recs);
+  $$('#statScope button').forEach(b=> b.onclick = ()=>{ statScope=b.dataset.scope; openCat=null; renderStat(); });
+}
+function renderDonut(cats, total){
+  const zone = $('#statDonutZone');
+  if(!total){ zone.innerHTML = '<div class="empty" style="padding:34px 20px"><div class="em">📊</div><div class="et">这一时段还没有支出</div></div>'; return; }
+  const R=54, CX=70, CY=70, SW=19, C=2*Math.PI*R;
+  let off=0, segs='';
+  cats.forEach(c=>{
+    const frac = c.amount/total, len = frac*C;
+    segs += '<circle cx="'+CX+'" cy="'+CY+'" r="'+R+'" fill="none" stroke="'+catColor(c.id)+'" stroke-width="'+SW+'" '
+         +  'stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" stroke-linecap="butt"/>';
+    off += len;
+  });
+  const top = cats[0];
+  zone.innerHTML = '<div class="donutwrap">'
+    + '<div class="donut" style="width:140px;height:140px">'
+    +   '<svg width="140" height="140" viewBox="0 0 140 140" style="transform:rotate(-90deg)">'
+    +     '<circle cx="70" cy="70" r="'+R+'" fill="none" stroke="var(--card2)" stroke-width="'+SW+'"/>'+segs
+    +   '</svg>'
+    +   '<div class="dc"><div class="dl">'+esc(top?top.name:'')+'</div>'
+    +     '<div class="dv mono"><span class="cur">'+((top?top.amount/total:0)*100).toFixed(0)+'%</span></div>'
+    +     '<div class="dl" style="margin-top:3px">最大支出</div></div>'
+    + '</div>'
+    + '<div style="flex:1;min-width:0">'
+    +   cats.slice(0,4).map(c=>
+          '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px">'
+        + '<span class="dot" style="width:8px;height:8px;border-radius:50%;background:'+catColor(c.id)+';flex:0 0 8px"></span>'
+        + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(c.name)+'</span>'
+        + '<span class="mono" style="font-weight:600">¥'+fmt(c.amount)+'</span></div>').join('')
+    +   (cats.length>4?'<div style="font-size:12px;color:var(--text2);padding-top:4px">等 '+cats.length+' 个分类</div>':'')
+    + '</div></div>';
+}
+function renderCatList(cats, total){
+  const zone = $('#statCatZone');
+  if(!cats.length){ zone.innerHTML=''; return; }
+  let html = '<div class="card" style="margin-top:14px"><div style="padding:14px 16px 2px;font-size:12.5px;color:var(--text2)">分类占比</div><div class="statlist">';
+  cats.forEach(c=>{
+    const pct = total? c.amount/total*100 : 0;
+    const color = catColor(c.id);
+    const subs = Object.entries(c.subs).sort((a,b)=>b[1]-a[1]);
+    const open = openCat===c.id;
+    html += '<div class="srow'+(open?' open':'')+'" data-cat="'+c.id+'">'
+      + (open?'<i class="tophair"></i>':'')
+      + '<span class="sic">'+iconOf(c.id)+'</span>'
+      + '<div class="sinfo">'
+      +   '<div class="sname"><span>'+esc(c.name)+'</span><span class="sa mono">¥'+fmt(c.amount)+'</span></div>'
+      +   '<div class="bar"><i style="width:'+pct.toFixed(1)+'%;background:'+color+'"></i></div>'
+      +   '<div class="sp"><span>'+pct.toFixed(1)+'%</span><span>'+subs.length+' 个子类</span></div>'
+      + '</div>'
+      + '<svg class="sarrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>'
+      + '</div>';
+    if(open){
+      subs.forEach(s=>{
+        html += '<div class="subrow"><span class="sb"></span><span>'+esc(s[0])+'</span><span class="sam mono">¥'+fmt(s[1])+'</span></div>';
+      });
+    }
+  });
+  html += '</div></div>';
+  zone.innerHTML = html;
+  $$('#statCatZone .srow').forEach(el=> el.addEventListener('click', ()=>{
+    openCat = openCat===el.dataset.cat ? null : el.dataset.cat;
+    renderStat();
+  }));
+}
+function renderTrend(recs){
+  const card = $('#statTrendCard');
+  let buckets; // [{label, amount}]
+  if(statScope==='month'){
+    const dim = new Date(statMonth.getFullYear(), statMonth.getMonth()+1, 0).getDate();
+    buckets = [];
+    for(let d=1; d<=dim; d++){
+      const ds = monthKey(statMonth)+'-'+pad2(d);
+      buckets.push({ label:(d===1||d%5===0||d===dim)?String(d):'', amount:0 });
+    }
+    recs.forEach(r=>{ const d=+r.date.slice(8,10); if(buckets[d-1]) buckets[d-1].amount += r.amount; });
+  }else{
+    buckets = [];
+    for(let m=1; m<=12; m++) buckets.push({ label:m+'月', amount:0 });
+    recs.forEach(r=>{ const m=+r.date.slice(5,7); if(buckets[m-1]) buckets[m-1].amount += r.amount; });
+  }
+  const max = Math.max.apply(null, buckets.map(b=>b.amount).concat([1]));
+  const total = recs.reduce((s,r)=>s+r.amount,0);
+  const hasData = total>0;
+  let html = '<div class="trend"><div class="th"><span>'+(statScope==='month'?'每日支出趋势':'每月支出趋势')+'</span><span>最高 ¥'+fmt(max===1&&!hasData?0:max)+'</span></div>';
+  html += '<div class="bars">';
+  buckets.forEach(b=>{
+    const h = b.amount? Math.max(3, Math.round(b.amount/max*100)) : 2;
+    html += '<div class="bcol'+(b.amount===max&&hasData?' hi':'')+'">'
+      + '<i class="'+(b.amount?'':'zero')+'" style="height:'+h+'%"></i>'
+      + '<span class="bl">'+esc(b.label)+'</span></div>';
+  });
+  html += '</div>';
+  if(!hasData) html += '<div style="text-align:center;font-size:12.5px;color:var(--text3);margin-top:10px">暂无数据</div>';
+  html += '</div>';
+  card.innerHTML = html;
+}
+$('#statPrev').addEventListener('click', ()=>{
+  if(statScope==='month') statMonth.setMonth(statMonth.getMonth()-1); else statYear--;
+  renderStat();
+});
+$('#statNext').addEventListener('click', ()=>{
+  if(statScope==='month') statMonth.setMonth(statMonth.getMonth()+1); else statYear++;
+  renderStat();
+});
+$('#statPeriod').addEventListener('click', ()=>{
+  if(statScope==='month'){ statMonth = new Date(); statMonth.setDate(1); } else statYear = new Date().getFullYear();
+  renderStat(); toast('已回到当前');
+});
+
+/* ---------- 8. 记一笔 / 编辑面板 ---------- */
+let sheet = { mode:'add', id:null, amountStr:'', catId:null, subId:null, subName:'', pane:'common', cmEdit:false };
+
+/* ---------- 常用（快捷）分类 ---------- */
+// 解析 meta.common（按 subId 引用），过滤掉已被删除的分类；返回顺序与 meta.common 一致
+function commonItems(){
+  const cats = visibleCats();
+  const out = [];
+  (S.meta.common||[]).forEach((it, idx)=>{
+    const c = cats.find(x=>x.id===it.catId);
+    if(!c) return;
+    const subId = it.subId || '';
+    const s = subId ? c.subs.find(x=>x.id===subId) : null;
+    if(subId && !s) return;                 // 该子分类已被删除
+    out.push({
+      idx: idx, catId: c.id, catName: c.name, icon: c.icon,
+      subId: subId, subName: s ? s.name : c.name,
+      label: it.label || (s ? s.name : c.name)
+    });
+  });
+  return out;
+}
+function addCommon(catId, subId, label){
+  const list = S.meta.common = S.meta.common || [];
+  subId = subId || '';
+  if(list.some(it=> it.catId===catId && (it.subId||'')===subId)){ toast('已在常用分类里了'); return; }
+  const it = { catId:catId, subId:subId };
+  if(label) it.label = label;
+  list.push(it); save(); toast('已加入常用');
+  if($('#sheet').classList.contains('open')) renderSheetSubs();
+  if(curTab==='set') renderSet();
+}
+function removeCommon(idx){
+  if(!S.meta.common || !S.meta.common[idx]) return;
+  const it = commonItems().find(x=>x.idx===idx);
+  S.meta.common.splice(idx,1); save();
+  toast(it ? '已移出「'+it.label+'」' : '已移出');
+  if($('#sheet').classList.contains('open')) renderSheetSubs();
+  if(curTab==='set') renderSet();
+}
+// 面板顶部显示当前选中的分类，避免“常用”页签下看不清选了哪个
+function renderSelLabel(){
+  const el = $('#selLabel'); if(!el) return;
+  const c = visibleCats().find(x=>x.id===sheet.catId);
+  if(!c){ el.textContent = ''; return; }
+  el.textContent = c.icon + ' ' + c.name + (sheet.subName && sheet.subName!==c.name ? ' · ' + sheet.subName : '');
+}
+
+function openSheet(mode, id){
+  const cats = visibleCats();
+  if(!cats.length){ toast('请先在设置里保留至少一个分类'); return; }
+  sheet.mode = mode || 'add';
+  sheet.id = id || null;
+  sheet.cmEdit = false;
+  if(mode==='edit'){
+    const r = S.records.find(x=>x.id===id);
+    if(!r) return;
+    sheet.amountStr = (r.amount/100).toFixed(2).replace(/\.00$/,'').replace(/(\.\d)0$/,'$1');
+    sheet.catId = r.catId; sheet.subId = r.subId; sheet.subName = r.subName;
+    $('#inDate').value = r.date;
+    $('#inNote').value = r.note || '';
+    $('#sheetTitle').textContent = '编辑支出';
+    $('#sheetDel').classList.remove('hidden');
+    // 若分类已不存在，回退到第一个
+    if(!cats.some(c=>c.id===sheet.catId)){ sheet.catId = cats[0].id; sheet.subId = null; }
+  }else{
+    sheet.amountStr = '';
+    $('#inDate').value = todayStr();
+    $('#inNote').value = '';
+    $('#sheetTitle').textContent = '记一笔';
+    $('#sheetDel').classList.add('hidden');
+    const last = cats.find(c=>c.id===S.meta.lastCat) || cats[0];
+    sheet.catId = last.id;
+    const subs = last.subs.length ? last.subs : [{id:'', name:last.name}];
+    const lastSub = subs.find(s=>s.id===S.meta.lastSub) || subs[0];
+    sheet.subId = lastSub.id; sheet.subName = lastSub.name;
+  }
+  // 确保选中子类在当前主类下有效
+  const cur = cats.find(c=>c.id===sheet.catId) || cats[0];
+  const subs = cur.subs.length ? cur.subs : [{id:'', name:cur.name}];
+  if(!subs.some(s=>s.id===sheet.subId)){ sheet.subId = subs[0].id; sheet.subName = subs[0].name; }
+  // 页签：编辑时停在原分类，记账时优先打开“常用”
+  sheet.pane = (mode==='edit') ? sheet.catId : (commonItems().length ? 'common' : cats[0].id);
+  renderSheetTabs();
+  renderSheetSubs();
+  renderAmount();
+  buildPad();
+  $('#sheet').classList.add('open');
+  $('#mask').classList.add('open');
+}
+function closeSheet(){
+  $('#sheet').classList.remove('open');
+  $('#mask').classList.remove('open');
+}
+function renderSheetTabs(){
+  const cats = visibleCats();
+  let html = '<button class="cattab'+(sheet.pane==='common'?' on':'')+'" data-pane="common"><span class="ci">⭐</span>常用</button>';
+  cats.forEach(c=>{
+    html += '<button class="cattab'+(sheet.pane===c.id?' on':'')+'" data-pane="'+c.id+'"><span class="ci">'+c.icon+'</span>'+esc(c.name)+'</button>';
+  });
+  $('#catTabs').innerHTML = html;
+  $$('#catTabs .cattab').forEach(b=> b.addEventListener('click', ()=>{
+    const p = b.dataset.pane;
+    if(p==='common'){
+      sheet.pane = 'common';
+    }else{
+      sheet.pane = p;
+      sheet.catId = p;
+      const c = cats.find(x=>x.id===p);
+      const subs = c.subs.length ? c.subs : [{id:'', name:c.name}];
+      if(!subs.some(s=>s.id===sheet.subId)){ sheet.subId = subs[0].id; sheet.subName = subs[0].name; }
+    }
+    renderSheetTabs(); renderSheetSubs();
+    const on = $('#catTabs .cattab.on'); if(on) on.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'});
+  }));
+  const on = $('#catTabs .cattab.on'); if(on) on.scrollIntoView({inline:'center', block:'nearest'});
+  renderSelLabel();
+}
+function renderSheetSubs(){
+  const grid = $('#subGrid');
+  if(sheet.pane==='common'){
+    const items = commonItems();
+    let hint = '常用分类';
+    if(sheet.cmEdit && items.length) hint += ' · 点角标 × 移除';
+    let html = '<div class="cmhead"><span class="cl">'+hint+'</span>'
+             + '<button class="ce" id="cmEditBtn">'+(sheet.cmEdit?'完成':'编辑')+'</button></div>';
+    if(!items.length){
+      html += '<div style="grid-column:1/-1;padding:2px 4px 10px;font-size:12.5px;color:var(--text2)">还没有常用分类，点下面的「＋ 添加」自己挑，或在「设置 → 常用分类」里配置。</div>';
+    }
+    html += items.map((it,i)=>{
+      const on = !sheet.cmEdit && sheet.catId===it.catId && sheet.subId===it.subId;
+      return '<button class="subbtn cm'+(on?' on':'')+'" data-ci="'+i+'">'
+        + '<span class="cmi">'+it.icon+'</span><span>'+esc(it.label)+'</span>'
+        + (sheet.cmEdit ? '<span class="cmx" data-rm="'+it.idx+'">×</span>' : '')
+        + '</button>';
+    }).join('');
+    html += '<button class="subbtn cm adm'+(sheet.cmEdit?' on':'')+'" id="cmAddBtn"><span class="cmi">＋</span><span>添加</span></button>';
+    grid.innerHTML = html;
+    $('#cmEditBtn').addEventListener('click', ()=>{ sheet.cmEdit = !sheet.cmEdit; renderSheetSubs(); });
+    $('#cmAddBtn').addEventListener('click', showCommonPicker);
+    $$('#subGrid .subbtn[data-ci]').forEach(b=> b.addEventListener('click', ev=>{
+      if(sheet.cmEdit){
+        const x = ev.target.closest && ev.target.closest('[data-rm]');
+        if(x) removeCommon(+x.dataset.rm);
+        return;
+      }
+      const it = items[+b.dataset.ci];
+      if(!it) return;
+      sheet.catId = it.catId; sheet.subId = it.subId; sheet.subName = it.subName;
+      renderSheetSubs(); renderSelLabel();
+    }));
+    return;
+  }
+  const c = visibleCats().find(x=>x.id===sheet.catId);
+  if(!c){ grid.innerHTML = ''; return; }
+  const subs = c.subs.length ? c.subs : [{id:'', name:c.name}];
+  grid.innerHTML = subs.map(s=>
+    '<button class="subbtn'+(s.id===sheet.subId?' on':'')+'" data-sub="'+esc(s.id)+'" data-name="'+esc(s.name)+'">'+esc(s.name)+'</button>'
+  ).join('');
+  $$('#subGrid .subbtn').forEach(b=> b.addEventListener('click', ()=>{
+    sheet.subId = b.dataset.sub;
+    sheet.subName = b.dataset.name;
+    renderSheetSubs(); renderSelLabel();
+  }));
+}
+function renderAmount(){
+  const a = $('#amountText'), box = $('#amountVal');
+  a.textContent = sheet.amountStr || '0';
+  box.classList.toggle('blank', !sheet.amountStr);
+  const cents = Math.round(parseFloat(sheet.amountStr||'0')*100) || 0;
+  const sv = $('#saveBtn'); if(sv) sv.disabled = !(cents>0);
+}
+function buildPad(){
+  const delSvg = '<svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6H9l-5 6 5 6h11a1 1 0 001-1V7a1 1 0 00-1-1z"/><path d="M13 11l4 4M17 11l-4 4"/></svg>';
+  const keys = ['1','2','3','4','5','6','7','8','9','.','0','00'];
+  let html = '<div class="pad">';
+  // 退格键固定在第 1 行第 4 列（保存键占第 4 列 2~4 行），避免自动排布错位
+  html += '<button class="key fn" data-k="del" style="grid-area:1/4">'+delSvg+'</button>';
+  keys.forEach(k=>{ html += '<button class="key" data-k="'+k+'">'+k+'</button>'; });
+  html += '</div><button class="key save" id="saveBtn" disabled>保存</button>';
+  $('#padwrap').innerHTML = html;
+  $$('#padwrap .key[data-k]').forEach(b=> b.addEventListener('click', ()=> padPress(b.dataset.k)) );
+  $('#saveBtn').addEventListener('click', commitSheet);
+  renderAmount();
+}
+function padPress(k){
+  vibrate(8);
+  let s = sheet.amountStr;
+  if(k==='del'){
+    s = s.slice(0,-1);
+  }else if(k==='.'){
+    if(s.indexOf('.')<0) s = (s||'0') + '.';
+  }else{
+    for(const ch of (k==='00' ? '00' : k)){
+      if(s.indexOf('.')>=0 && s.split('.')[1].length>=2) break; // 最多两位小数
+      if(s.replace('.','').length>=9) break;                    // 数字最多 9 位
+      if(s==='0') s = ch;
+      else if(s==='' && ch==='0') s = '0';
+      else s = s + ch;
+    }
+  }
+  sheet.amountStr = s;
+  renderAmount();
+}
+function commitSheet(){
+  const cents = Math.round(parseFloat(sheet.amountStr||'0')*100);
+  if(!(cents>0)){ toast('请输入金额'); return; }
+  const date = $('#inDate').value || todayStr();
+  const note = ($('#inNote').value||'').trim();
+  const cats = visibleCats();
+  const c = cats.find(x=>x.id===sheet.catId);
+  if(!c){ toast('分类无效'); return; }
+  const subName = sheet.subName || c.name;
+  if(sheet.mode==='edit'){
+    const r = S.records.find(x=>x.id===sheet.id);
+    if(r){ r.amount=cents; r.catId=c.id; r.catName=c.name; r.subId=sheet.subId; r.subName=subName; r.date=date; r.note=note; }
+  }else{
+    S.records.push({ id:uid(), amount:cents, catId:c.id, catName:c.name, subId:sheet.subId, subName:subName, date:date, note:note, createdAt:Date.now() });
+  }
+  S.meta.lastCat = c.id; S.meta.lastSub = sheet.subId;
+  save();
+  listMonth = dateObj(date); listMonth.setDate(1);
+  closeSheet();
+  vibrate(14);
+  toast(sheet.mode==='edit' ? '已保存修改' : '记账成功');
+  renderAll();
+}
+$('#sheetDel').addEventListener('click', ()=>{
+  if(sheet.mode!=='edit') return;
+  const r = S.records.find(x=>x.id===sheet.id);
+  if(!r) return;
+  if(!confirm('删除这笔支出「¥'+fmt(r.amount)+' '+r.catName+'」？')) return;
+  S.records = S.records.filter(x=>x.id!==sheet.id);
+  save(); closeSheet(); renderAll(); toast('已删除');
+});
+$('#sheetClose').addEventListener('click', closeSheet);
+$('#mask').addEventListener('click', ()=>{ if($('#sheet').classList.contains('open')) closeSheet(); if($('#dlg').classList.contains('open')) closeDialog(); });
+$('#fab').addEventListener('click', ()=> openSheet('add'));
+
+/* ---------- 9. 拖动排序（触摸/鼠标通用） ---------- */
+const GRIP_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>';
+// 每种可排序容器的子项选择器
+const SRT_ITEM = { main:'.catcard[data-cat]', sub:'.subchip[data-sub]', common:'.subchip[data-key]' };
+let SRT = null; // 当前拖拽状态
+function srtItems(){
+  return $$(SRT.itemSel, SRT.listEl).filter(el=> el.parentNode===SRT.listEl);
+}
+function srtNearest(x,y){
+  let best=null, bd=Infinity;
+  srtItems().forEach(el=>{
+    if(el===SRT.dragEl) return;
+    const r = el.getBoundingClientRect();
+    const cx = r.left+r.width/2, cy = r.top+r.height/2;
+    let d = (x-cx)*(x-cx) + (y-cy)*(y-cy);
+    if(x>=r.left && x<=r.right && y>=r.top && y<=r.bottom) d = -1;
+    if(d<bd){ bd=d; best=el; }
+  });
+  return best;
+}
+function srtMove(x,y){
+  const vh = window.innerHeight || 800;
+  if(y<64) window.scrollBy(0,-10); else if(y>vh-64) window.scrollBy(0,10);
+  const t = srtNearest(x,y);
+  if(!t || t===SRT.dragEl) return;
+  const r = t.getBoundingClientRect();
+  const cy = r.top + r.height/2;
+  let before;
+  if(SRT.axis==='y') before = y < cy;
+  else before = (y>=r.top && y<=r.bottom) ? (x < r.left + r.width/2) : (y < cy);
+  const ref = before ? t : t.nextSibling;
+  if(ref===SRT.dragEl) return;
+  SRT.listEl.insertBefore(SRT.dragEl, ref);
+}
+function srtCommit(){
+  const kind = SRT.listEl.dataset.sortable;
+  const key = el => el.dataset.cat || el.dataset.sub || el.dataset.key;
+  const order = srtItems().map(key).filter(Boolean);
+  if(kind==='main'){
+    const map = {}; S.meta.cats.forEach(c=>map[c.id]=c);
+    S.meta.cats = order.map(id=>map[id]).filter(Boolean);
+  }else if(kind==='sub'){
+    const c = findCat(SRT.listEl.dataset.cat);
+    if(c){
+      const map = {}; c.subs.forEach(s=>map[s.id]=s);
+      c.subs = order.map(id=>map[id]).filter(Boolean);
+    }
+  }else if(kind==='common'){
+    const map = {}; (S.meta.common||[]).forEach(it=>map[it.catId+'|'+(it.subId||'')]=it);
+    S.meta.common = order.map(k=>map[k]).filter(Boolean);
+  }
+  save();
+  if(kind==='main' && curTab==='set') renderSet(); // 颜色按位置着色，重排后刷新
+}
+function srtStart(e){
+  const t = e.target;
+  const listEl = t && t.closest ? t.closest('[data-sortable]') : null;
+  if(!listEl) return;
+  const sel = SRT_ITEM[listEl.dataset.sortable];
+  if(!sel) return;
+  const handle = t.closest('.dh');
+  if(!handle) return;
+  const item = handle.closest(sel);
+  if(!item || item.parentNode!==listEl) return;
+  const items = $$(sel, listEl).filter(el=> el.parentNode===listEl);
+  if(items.length<2) return;
+  e.preventDefault();
+  SRT = { listEl:listEl, itemSel:sel, dragEl:item, pid:e.pointerId,
+          axis: listEl.dataset.axis || 'auto', x:e.clientX, y:e.clientY, raf:0 };
+  item.classList.add('dragging');
+  try{ listEl.setPointerCapture(e.pointerId); }catch(_){ }
+  vibrate(10);
+}
+document.addEventListener('pointerdown', srtStart, {passive:false});
+document.addEventListener('pointermove', e=>{
+  if(!SRT || e.pointerId!==SRT.pid) return;
+  e.preventDefault();
+  SRT.x = e.clientX; SRT.y = e.clientY;
+  if(SRT.raf) return;
+  SRT.raf = requestAnimationFrame(()=>{ SRT.raf = 0; if(SRT) srtMove(SRT.x, SRT.y); });
+}, {passive:false});
+function srtEnd(e){
+  if(!SRT || (e && e.pointerId!==SRT.pid)) return;
+  if(SRT.raf) cancelAnimationFrame(SRT.raf);
+  SRT.dragEl.classList.remove('dragging');
+  srtCommit();
+  SRT = null;
+  vibrate(6);
+}
+document.addEventListener('pointerup', srtEnd);
+document.addEventListener('pointercancel', srtEnd);
+
+/* ---------- 10. 设置 ---------- */
+function renderSet(){
+  $('#exportSub').textContent = '共 ' + S.records.length + ' 条记录';
+  renderCommonCard();
+  const cats = visibleCats();
+  let html = '<div class="gh">分类管理 · 共 '+cats.length+' 个一级分类。拖动 ⠿ 排序，点名称改名，点 × 删除</div>';
+  cats.forEach((c,idx)=>{
+    const color = PALETTE[idx % PALETTE.length];
+    html += '<div class="catcard" data-cat="'+esc(c.id)+'">'
+      + '<div class="ch">'
+      +   '<span class="dh" aria-label="拖动排序">'+GRIP_SVG+'</span>'
+      +   '<span class="cic">'+c.icon+'</span>'
+      +   '<span class="dot" style="width:8px;height:8px;border-radius:50%;background:'+color+'"></span>'
+      +   '<span class="cn" data-renamemain="'+esc(c.id)+'">'+esc(c.name)+'</span>'
+      +   '<span class="cnt">'+c.subs.length+' 项</span>'
+      +   '<button class="del" data-delmain="'+esc(c.id)+'">删除</button>'
+      + '</div>'
+      + '<div class="subchips" data-sortable="sub" data-axis="auto" data-cat="'+esc(c.id)+'">'
+      +   c.subs.map(s=>'<span class="subchip" data-sub="'+esc(s.id)+'">'
+      +       '<span class="dh">'+GRIP_SVG+'</span>'
+      +       '<span class="sn" data-renamesub="'+esc(c.id)+'|'+esc(s.id)+'">'+esc(s.name)+'</span>'
+      +       '<button class="x" data-delsub="'+esc(c.id)+'|'+esc(s.id)+'">×</button></span>').join('')
+      +   '<button class="addsub" data-addsub="'+esc(c.id)+'">＋ 子类</button>'
+      + '</div></div>';
+  });
+  html += '<div class="catcard"><button class="addsub" id="addMainBtn" style="padding:9px 14px">＋ 新增一级分类</button></div>';
+  $('#setCats').innerHTML = html;
+
+  // 删除二级分类
+  $$('#setCats [data-delsub]').forEach(b=> b.addEventListener('click', ()=>{
+    const parts = b.dataset.delsub.split('|'); const mid=parts[0], sid=parts[1];
+    const c = findCat(mid); if(!c) return;
+    if(c.subs.length<=1){ toast('每个分类至少保留一个子类'); return; }
+    if(!confirm('删除二级分类「'+ (c.subs.find(s=>s.id===sid)||{}).name +'」？历史账单不受影响。')) return;
+    c.subs = c.subs.filter(s=>s.id!==sid);
+    pruneCommon(); save(); renderSet(); toast('已删除');
+  }));
+  // 添加二级分类
+  $$('#setCats [data-addsub]').forEach(b=> b.addEventListener('click', ()=>{
+    const c = findCat(b.dataset.addsub); if(!c) return;
+    showPrompt('添加二级分类', [{type:'text', placeholder:'如：停车费', key:'name'}], (v)=>{
+      const name = (v.name||'').trim();
+      if(!name) return;
+      c.subs.push({ id: c.id+':x:'+uid(), name:name });
+      save(); renderSet(); toast('已添加');
+    });
+  }));
+  // 删除一级分类
+  $$('#setCats [data-delmain]').forEach(b=> b.addEventListener('click', ()=>{
+    const c = findCat(b.dataset.delmain); if(!c) return;
+    if(!confirm('删除一级分类「'+c.name+'」及其 '+c.subs.length+' 个二级分类？可用“恢复默认分类”找回。历史账单不受影响。')) return;
+    S.meta.cats = S.meta.cats.filter(x=>x.id!==c.id);
+    pruneCommon(); save(); renderSet(); toast('已删除');
+  }));
+  // 修改一级分类名称（同步历史账单）
+  $$('#setCats [data-renamemain]').forEach(b=> b.addEventListener('click', ()=>{
+    const c = findCat(b.dataset.renamemain); if(!c) return;
+    showPrompt('修改一级分类名称', [{type:'text', value:c.name, key:'name'}], (v)=>{
+      const name = (v.name||'').trim();
+      if(!name || name===c.name) return;
+      syncRename(c.id, null, name);
+      c.name = name;
+      save(); renderSet(); toast('已改名，历史账单已同步');
+    });
+  }));
+  // 修改二级分类名称（同步历史账单）
+  $$('#setCats [data-renamesub]').forEach(b=> b.addEventListener('click', ()=>{
+    const v = b.dataset.renamesub; const i = v.indexOf('|');
+    const mid = v.slice(0,i), sid = v.slice(i+1);
+    const c = findCat(mid); if(!c) return;
+    const s = c.subs.find(x=>x.id===sid); if(!s) return;
+    showPrompt('修改二级分类名称', [{type:'text', value:s.name, key:'name'}], (vv)=>{
+      const name = (vv.name||'').trim();
+      if(!name || name===s.name) return;
+      syncRename(mid, sid, name);
+      s.name = name;
+      save(); renderSet(); toast('已改名，历史账单已同步');
+    });
+  }));
+  // 新增一级分类
+  $('#addMainBtn').addEventListener('click', ()=>{
+    showPrompt('新增一级分类', [{type:'text', placeholder:'分类名称，如：装修', key:'name'}], (v)=>{
+      const name = (v.name||'').trim();
+      if(!name) return;
+      S.meta.cats.push({ id:'m_'+uid(), name:name, icon:'📌', subs:[] });
+      save(); renderSet(); toast('已添加（可点「＋ 子类」添加二级分类）');
+    });
+  });
+}
+/* 常用分类卡片 */
+function renderCommonCard(){
+  const items = commonItems();
+  let html = '<div class="gh">常用分类 · 记账页首屏快捷入口。拖动 ⠿ 排序</div>'
+    + '<div class="catcard"><div class="ch"><span class="cic">⭐</span>'
+    +   '<span class="cn">常用</span><span class="cnt">共 '+items.length+' 个</span></div>'
+    + '<div class="subchips" data-sortable="common" data-axis="auto">'
+    + (items.length
+        ? items.map(it=>'<span class="subchip" data-key="'+esc(it.catId+'|'+it.subId)+'">'
+            + '<span class="dh">'+GRIP_SVG+'</span>'
+            + '<span class="sn">'+it.icon+' '+esc(it.label)+'</span>'
+            + '<button class="x" data-delcommon="'+it.idx+'">×</button></span>').join('')
+        : '<span style="font-size:12.5px;color:var(--text2);padding:2px 0">还没有常用分类</span>')
+    + '<button class="addsub" id="addCommonBtn">＋ 添加</button>'
+    + '<button class="addsub" id="resetCommonBtn" style="background:var(--card2);color:var(--text2)">恢复默认</button>'
+    + '</div></div>';
+  $('#setCommon').innerHTML = html;
+  $('#addCommonBtn').addEventListener('click', showCommonPicker);
+  $('#resetCommonBtn').addEventListener('click', ()=>{
+    if(!confirm('恢复为默认的常用分类？')) return;
+    S.meta.common = commonFromOld(DEFAULT_COMMON, S.meta.cats);
+    save(); renderSet(); toast('已恢复默认常用分类');
+  });
+  $$('#setCommon [data-delcommon]').forEach(b=> b.addEventListener('click', ()=> removeCommon(+b.dataset.delcommon)));
+}
+$('#btnExport').addEventListener('click', ()=>{
+  if(!S.records.length){ toast('还没有数据可导出'); return; }
+  const data = JSON.stringify({ app:'随手记账', exportedAt:new Date().toISOString(), data:S }, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = '随手记账备份_'+todayStr().replace(/-/g,'')+'.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  toast('已导出备份文件');
+});
+$('#btnCopy').addEventListener('click', ()=>{
+  const data = JSON.stringify({ app:'随手记账', data:S });
+  const done = ()=> toast('已复制到剪贴板');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(data).then(done, ()=>fallback());
+  } else fallback();
+  function fallback(){ showPrompt('手动复制', [{type:'textarea', value:data, key:'t'}], ()=>{}); }
+});
+$('#btnImport').addEventListener('click', ()=> $('#fileInput').click());
+$('#fileInput').addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ()=>{
+    try{
+      let obj = JSON.parse(rd.result);
+      const d = obj && obj.data ? obj.data : obj;
+      if(!d || !Array.isArray(d.records)) throw new Error('格式不正确');
+      if(!confirm('导入将覆盖当前 '+S.records.length+' 条记录，确定继续？')) return;
+      S = normalizeData(d);
+      save(); renderAll(); toast('导入成功，共 '+S.records.length+' 条');
+    }catch(err){ alert('导入失败：'+err.message); }
+  };
+  rd.readAsText(f);
+  e.target.value = '';
+});
+$('#btnRestore').addEventListener('click', ()=>{
+  if(!confirm('恢复为默认分类？你新增 / 删除 / 改名 / 排序的分类设置会被重置，历史账单不受影响。')) return;
+  S.meta.cats = seedCats();
+  if(!(S.meta.common||[]).length) S.meta.common = commonFromOld(DEFAULT_COMMON, S.meta.cats);
+  pruneCommon();
+  save(); renderSet(); toast('已恢复默认分类');
+});
+$('#btnClear').addEventListener('click', ()=>{
+  if(!S.records.length){ toast('没有记录'); return; }
+  if(!confirm('清空全部 ' + S.records.length + ' 条记录？此操作不可恢复，建议先导出备份。')) return;
+  S.records = []; save(); renderAll(); toast('已清空');
+});
+
+/* ---------- 10. 通用输入弹窗 ---------- */
+let dlgOnOk = null;
+function showPrompt(title, fields, onOk){
+  $('#dlgTitle').textContent = title;
+  $('#dlgBody').innerHTML = fields.map((f,i)=>{
+    if(f.type==='textarea') return '<textarea data-i="'+i+'" style="width:100%;height:120px;background:var(--card2);border:none;border-radius:11px;padding:11px;font-size:12.5px;resize:none;outline:none" >'+esc(f.value||'')+'</textarea>';
+    return '<input type="'+f.type+'" data-i="'+i+'" placeholder="'+esc(f.placeholder||'')+'" value="'+esc(f.value||'')+'">';
+  }).join('');
+  dlgOnOk = ()=>{
+    const v = {};
+    $$('#dlgBody [data-i]').forEach(el=> v[fields[+el.dataset.i].key] = el.value);
+    onOk(v);
+  };
+  $('#dlgOk').classList.remove('danger');
+  $('#dlg').classList.add('open'); $('#mask').classList.add('open');
+  const first = $('#dlgBody input'); if(first) setTimeout(()=>first.focus(), 60);
+}
+/* 选择一级 + 二级分类，添加为常用 */
+function showCommonPicker(){
+  const cats = visibleCats();
+  if(!cats.length){ toast('没有可用的分类'); return; }
+  $('#dlgTitle').textContent = '添加常用分类';
+  $('#dlgBody').innerHTML =
+      '<label class="dlglab">一级分类</label>'
+    + '<select id="cpMain" class="dlgsel">'+cats.map(c=>'<option value="'+c.id+'">'+c.icon+' '+esc(c.name)+'</option>').join('')+'</select>'
+    + '<label class="dlglab">二级分类</label>'
+    + '<select id="cpSub" class="dlgsel"></select>';
+  const fill = ()=>{
+    const c = visibleCats().find(x=>x.id===$('#cpMain').value);
+    if(!c){ $('#cpSub').innerHTML = ''; return; }
+    let h = c.subs.map(s=>'<option value="'+esc(s.id)+'">'+esc(s.name)+'</option>').join('');
+    h += '<option value="">只记到一级分类（'+esc(c.name)+'）</option>';
+    $('#cpSub').innerHTML = h;
+  };
+  fill();
+  $('#cpMain').addEventListener('change', fill);
+  dlgOnOk = ()=>{
+    const c = visibleCats().find(x=>x.id===$('#cpMain').value);
+    if(!c) return;
+    addCommon(c.id, $('#cpSub').value);   // value 为 '' 表示只记到一级分类
+  };
+  $('#dlgOk').classList.remove('danger');
+  $('#dlg').classList.add('open'); $('#mask').classList.add('open');
+}
+function closeDialog(){ $('#dlg').classList.remove('open'); $('#mask').classList.remove('open'); dlgOnOk = null; }
+$('#dlgCancel').addEventListener('click', closeDialog);
+$('#dlgOk').addEventListener('click', ()=>{
+  const cb = dlgOnOk;
+  if(cb) cb();          // 此时弹窗仍打开，可读取内部的值
+  closeDialog();
+});
+
+/* ---------- 11. 初始化 ---------- */
+function renderAll(){ renderList(); renderStat(); if(curTab==='set') renderSet(); }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ if($('#dlg').classList.contains('open')) closeDialog(); else closeSheet(); } });
+switchTab('list');
+// 首次使用给个引导
+if(!S.records.length && !localStorage.getItem(KEY+'_seen')){
+  try{ localStorage.setItem(KEY+'_seen','1'); }catch(e){}
+  setTimeout(()=> toast('点右下角 + 开始记第一笔'), 600);
+}
+</script>
+</body>
+</html>
